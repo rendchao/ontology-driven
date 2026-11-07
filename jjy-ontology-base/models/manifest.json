@@ -1,0 +1,69 @@
+{
+    "model_type":  "MANIFEST",
+    "version":  "1.0",
+    "domain":  "示例业务",
+    "project":  "jjy-ontology-base",
+    "source_requirements":  "",
+    "framework":  "jjy-ontology-base (十一模型体系：M1-M7 + ME + MI + MM + MU)",
+    "generatedAt":  "2026-11-07T08:48:37+08:00",
+    "modelCount":  11,
+    "model_files":  [
+                        {
+                            "file":  "m1-object-model.yaml",
+                            "sha256":  "cc00fdc32f9bc86473a9af771488dfb709b13de5ec6adf3fbc26ea86de29a639"
+                        },
+                        {
+                            "file":  "m2-behavior-model.yaml",
+                            "sha256":  "ee52978dab14f98d8061341683ba23e114276f8c40b2d31bb6a014591428fbe0"
+                        },
+                        {
+                            "file":  "m3-rule-model.yaml",
+                            "sha256":  "b342c0b501b53c84a8e705b731628e68a27ba4e08dac218d8ed46a647118c333"
+                        },
+                        {
+                            "file":  "m4-scenario-model.yaml",
+                            "sha256":  "02b47ec05c982a8c417ba3076b83a3787580a49019e17875976bd2632f390ee3"
+                        },
+                        {
+                            "file":  "m5-actor-model.yaml",
+                            "sha256":  "2cbb5454516e25c590d589c01108671743cdf33a881639fb0671528c2d9a33e0"
+                        },
+                        {
+                            "file":  "m6-flow-model.yaml",
+                            "sha256":  "05de7ecb1a59cde72b7706e9526c442ba6acc6ce2bf67bca1757dea137d523d3"
+                        },
+                        {
+                            "file":  "m7-report-model.yaml",
+                            "sha256":  "577fda96bc562ba7b2e886f5056e77e3f61c4474591663881e5b5ba454522429"
+                        },
+                        {
+                            "file":  "me-event-model.yaml",
+                            "sha256":  "c809fb1ef2c370b9196cb57d1c249af74747c13e4930a3574d55962ddf2776e7"
+                        },
+                        {
+                            "file":  "mi-interface-model.yaml",
+                            "sha256":  "9fe1c568e1249ae56c232a17ed69f7e3de0266fc2aaec7d6ddeff08016c99d2b"
+                        },
+                        {
+                            "file":  "mm-mapping-model.yaml",
+                            "sha256":  "bd98a4f929b4be4ecae7899b898021d72f93381181f4e33fc76b207df5acecb6"
+                        },
+                        {
+                            "file":  "mu-ui-model.yaml",
+                            "sha256":  "fe23985a3e8472a977b1b12f7441d74ba6920ee951da0e05b200dd8dc6bef593"
+                        }
+                    ],
+    "build_order":  [
+                        "m1-object-model.yaml",
+                        "m5-actor-model.yaml",
+                        "m3-rule-model.yaml",
+                        "m2-behavior-model.yaml",
+                        "me-event-model.yaml",
+                        "m7-report-model.yaml",
+                        "m4-scenario-model.yaml",
+                        "m6-flow-model.yaml",
+                        "mi-interface-model.yaml",
+                        "mm-mapping-model.yaml",
+                        "mu-ui-model.yaml"
+                    ]
+}

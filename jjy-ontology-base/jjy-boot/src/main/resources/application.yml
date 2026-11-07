@@ -1,0 +1,141 @@
+# application.yml —— jjy 底座启动配置
+#
+# 数据库默认指向独立库 jjy_ontology_base（与任何业务库隔离）。
+# 生产环境请用环境变量覆盖数据源与密钥。
+spring:
+  application:
+    name: jjy-ontology-base
+
+  # ============================================================
+  # 数据源：MySQL 8.0
+  # ============================================================
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/jjy_ontology_base?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root123}
+    druid:
+      # 关键：每条连接都强制 SET NAMES utf8mb4，防止 MySQL 服务端 character_set_client=latin1 时中文被替换成 '?'
+      connection-init-sqls: "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
+      initial-size: 5
+      min-idle: 5
+      max-active: 50
+      max-wait: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+
+  # ============================================================
+  # MyBatis-Plus
+  # ============================================================
+  mybatis-plus:
+    mapper-locations: classpath*:com/jjy/**/persistence/mapper/*.xml
+    type-aliases-package: com.jjy.infrastructure.persistence.po
+    configuration:
+      map-underscore-to-camel-case: true
+    global-config:
+      banner: false
+      db-config:
+        id-type: ASSIGN_ID
+        logic-delete-field: flag
+        logic-delete-value: 1
+        logic-not-delete-value: 0
+
+  # ============================================================
+  # Flyway 迁移：平台表在此建，业务表由 M1+MM 模型生成
+  # ============================================================
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    table: flyway_schema_history
+    baseline-version: 0
+    validate-on-migrate: false
+    out-of-order: true
+    encoding: UTF-8
+
+  # ============================================================
+  # Jackson
+  # ============================================================
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+    default-property-inclusion: non_null
+
+  # ============================================================
+  # Servlet 上传
+  # ============================================================
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  # ============================================================
+  # 业务端点
+  # ============================================================
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: ${SERVER_CONTEXT_PATH:/api/v1}
+  tomcat:
+    uri-encoding: UTF-8
+
+# ============================================================
+# JWT
+# ============================================================
+jwt:
+  secret: ${JWT_SECRET:jjy-ontology-base-jwt-secret-key-must-be-at-least-32-chars-long-for-hs256}
+  expiration-seconds: 86400
+  refresh-expiration-seconds: 604800
+  issuer: jjy-ontology-base
+
+# ============================================================
+# 业务配置
+# ============================================================
+jjy:
+  ai:
+    enabled: false
+    # 系统名称（写入 AI 的自我介绍）；留空则用通用名
+    # 业务工程请覆盖此项，例如：system-name: 订单管理系统
+    system-name: ${AI_SYSTEM_NAME:}
+    # LLM 提供方配置（启用后必填）
+    provider: openai-compatible
+    base-url: ${AI_BASE_URL:https://api.openai.com/v1}
+    api-key: ${AI_API_KEY:sk-replace-me}
+    model: ${AI_MODEL:gpt-4o-mini}
+    temperature: 0.2
+    max-tokens: 4096
+    timeout-seconds: 60
+    max-tool-rounds: 6
+    enforce-caller-permissions: true
+    audit-enabled: true
+    # 允许 AI 只读查询的表；留空表示按本体模型自动推导
+    sql-whitelist-tables: []
+  outbox:
+    max-retries: 5
+    dispatch-interval-ms: 1000
+    batch-limit: 100
+  password:
+    min-length: 8
+    max-failed-attempts: 5
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    root: INFO
+    com.jjy: INFO

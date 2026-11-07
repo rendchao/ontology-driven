@@ -1,0 +1,194 @@
+# M2 行为模型元文件 - m2-behavior-model.yaml
+#
+# 行为 = 业务动作的声明式定义。triggerType=USER_ACTION 的行为必须被 MU 的操作功能点引用
+# （可追溯门禁，由 BehaviorRegistryChecker 校验）。
+#
+# ── behaviorForm：声明「这个行为由谁实现」────────────────────────
+#   TEMPLATE    —— 模板生成：由 codegen 生成 Handler 骨架（CRUD 类标准动作）。
+#                  生成物在 src/main/java/com/jjy/application/handler/generated/，
+#                  开发者可直接改；改动后生成器不再覆盖（按内容指纹判定）。
+#   HANDWRITTEN —— 手写实现：开发者自己写，codegen 不生成任何东西。
+#   SCRIPT      —— 脚本实现：由 M2 的 actionScript 表达式/脚本驱动（预留，
+#                  Java 8 无 Nashorn，当前不支持）。
+#   DECLARATIVE —— 纯声明：无本地代码，完全由引擎按 M7/规则/事件通用执行。
+#
+#   不写则视为 HANDWRITTEN（向后兼容：已有模型不写这个字段也能用）。
+#   该字段是「行为层能否自动化」的唯一判据——没有它，生成器不知道该为谁生成。
+model_type: BEHAVIOR
+version: "1.0"
+domain: "示例业务"
+
+behaviors:
+  - id: Product_SaveAsDraft
+    name: 保存商品草稿
+    ownerEntity: Product
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    behaviorForm: HANDWRITTEN
+    description: 新增或更新商品草稿
+    preconditions:
+      - RULE-PRODUCT-NAME-REQUIRED
+    # 后置条件 = 状态迁移的唯一真源。
+    # 目标状态由这里声明，代码（ProductHandler / LifecycleGuard）不再硬编码状态字符串。
+    # 改这里的 setValue，行为的目标状态随之改变。
+    postconditions:
+      - field: status
+        setValue: DRAFT
+    appliedRules:
+      - RULE-PRODUCT-NAME-REQUIRED
+      - RULE-PRODUCT-PRICE-POSITIVE
+    # requiredPermissions 引用 M5 的 permissionId（方法论 §3.2.1）
+    requiredPermissions:
+      - PERM-PRODUCT-ADD
+    producedEvents: []
+    subscribedEvents: []
+    syncTriggers: []
+
+  - id: Product_Submit
+    name: 提交商品上架
+    ownerEntity: Product
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    behaviorForm: HANDWRITTEN
+    description: 草稿提交后进入上架流程
+    preconditions: []
+    # 目标状态 ON_SHELF；本次迁移（DRAFT→ON_SHELF）的合法性由 M1 的 transitions 声明。
+    postconditions:
+      - field: status
+        setValue: ON_SHELF
+    # 提交时不再校验「名称必填」——名称已在暂存环节校验过。
+    # 规则校验应挂在「字段被写入」的那个行为上，否则提交动作会因为
+    # input 里没有名称字段而被误判为违规。
+    appliedRules: []
+    requiredPermissions:
+      - PERM-PRODUCT-SUBMIT
+    producedEvents:
+      - EVT-PRODUCT-001
+    subscribedEvents: []
+    # 路线一致性：Java 底座走十一模型（事件驱动）路线，跨聚合联动由
+    # producedEvents → ME 事件 → M2.subscribedEvents 承载，
+    # 因此这里不声明七模型路线的 syncTriggers——
+    # 声明一个运行期不消费的字段，比不声明更糟（模型说了不算）。
+    syncTriggers: []
+
+  - id: Product_TakeOff
+    name: 商品下架
+    ownerEntity: Product
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    behaviorForm: HANDWRITTEN
+    description: 已上架商品转为下架
+    # 前置条件由 M1 的 transitions 声明（ON_SHELF → OFF_SHELF），
+    # 由 LifecycleGuard 在运行期强制校验，不在此重复声明。
+    preconditions: []
+    # 目标状态 OFF_SHELF；迁移（ON_SHELF→OFF_SHELF）由 M1 transitions 声明。
+    postconditions:
+      - field: status
+        setValue: OFF_SHELF
+    appliedRules: []
+    requiredPermissions:
+      - PERM-PRODUCT-TAKEOFF
+    producedEvents: []
+    subscribedEvents: []
+    syncTriggers: []
+
+  - id: Product_Query
+    name: 查询商品列表
+    ownerEntity: Product
+    behaviorType: QUERY
+    triggerType: USER_ACTION
+    behaviorForm: HANDWRITTEN
+    description: 分页查询商品列表
+    preconditions: []
+    postconditions: []
+    appliedRules: []
+    requiredPermissions: []
+    # QUERY 行为与 M7 报表严格一对一（方法论 §1.3 设计决策 5）：
+    # 查询口径（结果列 / 数据源 / 排序 / 分页）由 M7 声明，行为只负责调用。
+    queryReportRef: QR-PRODUCT-001
+    producedEvents: []
+    subscribedEvents: []
+    syncTriggers: []
+
+  # ── 模板生成的行为：标准 CRUD 动作，由 codegen 生成骨架 ──────────
+  # 这是「行为层自动化」的样板：模型声明清楚后，
+  # 开发者拿到的是一份可编译、可运行、可直接改的 Handler 骨架。
+  #
+  # templateKind 指定生成哪种骨架：
+  #   DELETE       —— 按主键逻辑删除
+  #   UPDATE       —— 按主键更新可变字段（字段集由 M1 推导）
+  #   BATCH_DELETE —— 按条件批量逻辑删除
+  #   QUERY_PAGE   —— 分页查询（走 M7 报表口径）
+  - id: Product_Delete
+    name: 删除商品
+    ownerEntity: Product
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    behaviorForm: TEMPLATE
+    templateKind: DELETE
+    description: 按主键逻辑删除商品（flag 置 1）
+    preconditions: []
+    # 删除不改状态，无后置状态变更
+    postconditions: []
+    appliedRules: []
+    requiredPermissions:
+      - PERM-PRODUCT-DELETE
+    producedEvents: []
+    subscribedEvents: []
+    syncTriggers: []
+
+  - id: Product_Update
+    name: 更新商品
+    ownerEntity: Product
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    behaviorForm: TEMPLATE
+    templateKind: UPDATE
+    description: 按主键更新商品的可变字段（状态不在其中，状态走状态机）
+    preconditions: []
+    # 更新不改状态：无后置状态变更
+    postconditions: []
+    appliedRules: []
+    requiredPermissions:
+      - PERM-PRODUCT-ADD
+    producedEvents: []
+    subscribedEvents: []
+    syncTriggers: []
+
+  - id: Product_BatchDelete
+    name: 批量删除商品
+    ownerEntity: Product
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    behaviorForm: TEMPLATE
+    templateKind: BATCH_DELETE
+    description: 按条件批量逻辑删除商品
+    preconditions: []
+    postconditions: []
+    appliedRules: []
+    requiredPermissions:
+      - PERM-PRODUCT-DELETE
+    producedEvents: []
+    subscribedEvents: []
+    syncTriggers: []
+
+  # ── 事件驱动的行为：triggerType=EVENT ──────────────────────────────
+  # 订阅 EVT-PRODUCT-001（商品已上架），由 EventSubscriberRegistry 在
+  # 事件派发时经 EventBehaviorInvoker 走完整链路（权限 → 规则 → Handler）。
+  # 这条行为让事件的「产出方 → 消费方」闭环成立，
+  # 事件闭环对账（GET /event/closure-report）才能显示非零闭环率。
+  - id: Product_OnShelf
+    name: 商品上架后处理
+    ownerEntity: Product
+    behaviorType: COMMAND
+    triggerType: EVENT
+    behaviorForm: HANDWRITTEN
+    description: 消费商品已上架事件，记录上架时间
+    preconditions: []
+    postconditions: []
+    appliedRules: []
+    requiredPermissions: []
+    producedEvents: []
+    subscribedEvents:
+      - EVT-PRODUCT-001
+    syncTriggers: []

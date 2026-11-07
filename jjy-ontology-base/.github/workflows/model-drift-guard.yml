@@ -1,0 +1,113 @@
+name: Model Drift Guard
+
+# 模型漂移守门员（CI 侧）
+#
+# 为什么还需要 CI：git 钩子只在本机生效，且可被 --no-verify 绕过。
+# CI 是全员统一的强制关卡——别人的提交进不了你的主干。
+#
+# 五道关卡：
+#   1. manifest sha256 一致性（模型改了但没重算哈希 → 拦截）
+#   2. 11 项模型↔代码对账（漂移 → 拦截）
+#   3. 构建期 M1↔MM 闭合校验（codegen 插件内置，模型不闭合 → 构建失败）
+#   4. 单元测试（跨模型引用校验等）
+#   5. 守门员自验证（反向实验：故意注入漂移，确认守门员真拦得住）
+#
+# 第 5 关的必要性：一个从不报错的检查器比没有检查器更危险——
+# 它让人「以为」防线在。首轮注入实验中 6 项只有 1 项被拦下，
+# 据此补齐了第 5/7/9 项的三处盲区。这道关卡防止防线再次退化。
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  drift-guard:
+    runs-on: windows-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+          cache: maven
+
+      - name: 缓存 Maven 依赖
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2-
+
+      # ── 关卡 1：manifest sha256 ──
+      # 模型被改了但忘记重算哈希 → 这里拦住。
+      # 说明：这是「诚实性」检查——sha256 记录的是模型当前状态，
+      # 漂移本身由关卡 2/3 负责。
+      - name: 关卡 1 · manifest sha256 一致性
+        shell: pwsh
+        run: |
+          ./scripts/regenerate-manifest.ps1 -Check
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::manifest sha256 与模型文件不一致，请执行 scripts/regenerate-manifest.ps1 后重新提交"
+            exit 1
+          }
+
+      # ── 关卡 2：11 项对账 ──
+      # 需要先编译插件（检查器在插件的 target/classes 里）
+      - name: 编译对账器
+        run: mvn -o -q -pl codegen-maven-plugin compile
+
+      - name: 关卡 2 · 模型↔代码 11 项对账
+        shell: pwsh
+        run: |
+          ./scripts/check-model-drift.ps1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::检测到模型与代码漂移，CI 终止"
+            exit 1
+          }
+
+      # ── 关卡 3：构建（内含 M1↔MM 闭合校验，绑在 generate-sources 阶段）──
+      # 先单独装一次 codegen 插件：它在 reactor 首位且被其他模块引用，
+      # 首次构建时 target/classes 还不存在，Maven 找不到插件描述符。
+      - name: 安装 codegen 插件（自举，仅需一次）
+        run: mvn -o -pl codegen-maven-plugin install -DskipTests
+
+      - name: 关卡 3 · 构建（codegen 内置 M1↔MM 闭合校验）
+        run: mvn -o clean install -DskipTests
+
+      # ── 关卡 4：单元测试 ──
+      - name: 关卡 4 · 单元测试
+        run: mvn -o test
+
+      # ── 关卡 5：守门员自验证（反向实验）──
+      # 故意注入各类漂移，确认守门员真能拦住。
+      # 若某类漂移注入后守门员仍报 PASS，说明该防线已退化 → CI 失败。
+      # 实现见 scripts/verify-guards.ps1（本地也可单独跑）。
+      - name: 关卡 5 · 守门员自验证（反向实验）
+        shell: pwsh
+        run: |
+          ./scripts/verify-guards.ps1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::守门员自验证失败：存在拦不住的漂移类型，防线已退化"
+            exit 1
+          }
+
+      - name: 上传漂移报告
+        if: always()
+        shell: pwsh
+        run: |
+          ./scripts/check-model-drift.ps1 -Fix *> drift-report.txt
+        continue-on-error: true
+
+      - name: 归档漂移报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-report
+          path: drift-report.txt
+          if-no-files-found: ignore

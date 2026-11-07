@@ -1,0 +1,251 @@
+# ============================================================
+# 本体驱动开发技能（ontology-driven-dev）—— 仓库根级 .gitignore
+#
+# 覆盖技术栈：
+#   · Python 3.10 + Flask + SQLite      —— techbase/、code-app-example/
+#   · Node 18 + React/TS(Vite) / Vue 2  —— 各 frontend、jjy-ontology-base/web/
+#   · Java 8 + Maven + Spring Boot      —— jjy-ontology-base/
+#   · IntelliJ IDEA / VS Code / Eclipse
+#
+# 约定：子目录自带的 .gitignore（code-app-example/、techbase/）优先级高于本文件。
+#       本文件只负责「跨底座通用」的清理，个别例外在文件末尾统一豁免。
+# ============================================================
+
+
+# ------------------------------------------------------------
+# 1. 操作系统垃圾文件
+# ------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+Desktop.ini
+$RECYCLE.BIN/
+
+
+# ------------------------------------------------------------
+# 2. IDE / 编辑器
+# ------------------------------------------------------------
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# 通用编辑器临时文件
+*~
+*.swp
+*.swo
+*.swn
+.*.sw[a-p]
+.vscode-test/
+
+
+# ------------------------------------------------------------
+# 3. Python（techbase/、code-app-example/backend）
+# ------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.installed.cfg
+.eggs/
+
+# 虚拟环境
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# 打包产物
+build/
+dist/
+sdist/
+wheels/
+develop-eggs/
+downloads/
+eggs/
+lib64/
+parts/
+var/
+pip-wheel-metadata/
+
+# 测试 / 类型 / 覆盖率缓存
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pyre/
+.pytype/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+nosetests.xml
+
+
+# ------------------------------------------------------------
+# 4. Node / 前端（各 frontend、jjy-ontology-base/web）
+# ------------------------------------------------------------
+node_modules/
+jspm_packages/
+web_modules/
+.yarn/
+.pnpm-store/
+.npm/
+
+# 构建输出（Vite / Vue CLI / Webpack）
+dist/
+build/
+.output/
+.next/
+.nuxt/
+.cache/
+storybook-static/
+
+# 依赖与类型缓存
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+
+# ------------------------------------------------------------
+# 5. Java / Maven / Spring Boot（jjy-ontology-base/）
+# ------------------------------------------------------------
+target/
+*.jar
+*.war
+*.ear
+*.class
+*.nar
+
+# Maven
+dependency-reduced-pom.xml
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+buildNumber.properties
+.mvn/timing.properties
+.flattened-pom.xml
+
+# Spring Boot / 配置中心的本地覆盖
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+**/bootstrap-local.yml
+**/bootstrap-local.yaml
+
+# JVM 崩溃日志与诊断
+hs_err_pid*.log
+hs_err_pid*.log.md5
+replay_pid*.log
+replay_pid*.log.md5
+*.hprof
+
+
+# ------------------------------------------------------------
+# 6. 运行时数据库与本地数据
+#    （SQLite 运行时库默认不入库；测试库在文件末尾单独豁免）
+# ------------------------------------------------------------
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.mdb
+*.accdb
+*.dump
+*.rdb
+
+# 运行时生成的数据目录只排除底座的运行时库目录。
+# 注意：不能使用宽泛的 `data/` 规则——git 不会进入被排除的目录，
+# 一旦 `code-app-example/backend/data/` 整目录被排除，下面的豁免规则将失效。
+techbase/backend/data/
+jjy-ontology-base/**/data/
+
+
+# ------------------------------------------------------------
+# 7. 日志与临时输出
+# ------------------------------------------------------------
+*.log
+logs/
+log/
+tmp/
+temp/
+
+
+# ------------------------------------------------------------
+# 8. 密钥与本地私密配置
+#    （仓库内 config.yaml 仅含占位密钥，可正常入库；此处只挡 .env 类）
+# ------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+secrets/
+.secrets/
+
+
+# ------------------------------------------------------------
+# 9. 补丁 / 备份 / 冲突文件
+# ------------------------------------------------------------
+*.bak
+*.bak-*
+*.orig
+*.rej
+*.patch
+*.diff
+.idea_backup/
+
+
+# ============================================================
+# 10. 例外：以下文件属于「有意入库」的交付物，不被上述规则拦截
+# ============================================================
+
+# 样例应用自带的 SQLite 测试库 —— 按 code-app-example/.gitignore 的约定，
+# 它是版本化的测试数据（冒烟脚本依赖），不能被 *.db / data/ 规则忽略。
+!code-app-example/backend/data/app.db
+
+# 模型 YAML 与 manifest 是本技能的「唯一语义来源」，必须入库。
+!**/models/*.yaml
+!**/models/manifest.json
+
+# 交付用汇报 / 示例 HTML 与数据库迁移脚本属于文档与源码，需入库。
+!**/docs/**/*.html
+!**/db/migration/*.sql
+!scripts/init-db.sql

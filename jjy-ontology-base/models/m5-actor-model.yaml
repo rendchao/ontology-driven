@@ -1,0 +1,73 @@
+# M5 主体模型元文件 - m5-actor-model.yaml
+#
+# 角色 = 权限集合；权限码是接口鉴权的唯一依据。
+# 角色 code 为 admin / ROLE-ADMIN 时自动获得通配权限（见 AuthService）。
+model_type: ACTOR
+version: "1.0"
+domain: "示例业务"
+
+roles:
+  - roleId: ROLE-ADMIN
+    name: 系统管理员
+    description: 拥有全部权限
+    permissions:
+      - PERM-PRODUCT-LIST
+      - PERM-PRODUCT-ADD
+      - PERM-PRODUCT-SUBMIT
+      - PERM-PRODUCT-TAKEOFF
+      - PERM-PRODUCT-DELETE
+      - PERM-PRODUCT-UPDATE
+
+  - roleId: ROLE-PRODUCT-MANAGER
+    name: 商品管理员
+    description: 维护商品档案并提交上架
+    permissions:
+      - PERM-PRODUCT-LIST
+      - PERM-PRODUCT-ADD
+      - PERM-PRODUCT-SUBMIT
+      - PERM-PRODUCT-TAKEOFF
+      - PERM-PRODUCT-DELETE
+      - PERM-PRODUCT-UPDATE
+
+permissions:
+  - permissionId: PERM-PRODUCT-LIST
+    name: 查询商品列表
+    targetType: BEHAVIOR
+    targetRef: Product_Query
+    dataScope: ALL
+    abacCondition: ""
+
+  - permissionId: PERM-PRODUCT-ADD
+    name: 新增商品
+    targetType: BEHAVIOR
+    targetRef: Product_SaveAsDraft
+    dataScope: ALL
+    abacCondition: ""
+
+  - permissionId: PERM-PRODUCT-SUBMIT
+    name: 提交商品上架
+    targetType: BEHAVIOR
+    targetRef: Product_Submit
+    dataScope: ALL
+    abacCondition: ""
+
+  - permissionId: PERM-PRODUCT-TAKEOFF
+    name: 商品下架
+    targetType: BEHAVIOR
+    targetRef: Product_TakeOff
+    dataScope: ALL
+    abacCondition: ""
+
+  - permissionId: PERM-PRODUCT-DELETE
+    name: 删除商品
+    targetType: BEHAVIOR
+    targetRef: Product_Delete
+    dataScope: ALL
+    abacCondition: ""
+
+  - permissionId: PERM-PRODUCT-UPDATE
+    name: 更新商品
+    targetType: BEHAVIOR
+    targetRef: Product_Update
+    dataScope: ALL
+    abacCondition: ""

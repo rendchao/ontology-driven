@@ -1,0 +1,44 @@
+# MI 接口模型元文件 - mi-interface-model.yaml
+#
+# REST 契约的唯一真源：接口路径、方法、权限码、请求/响应字段。
+model_type: INTERFACE
+version: "1.0"
+domain: "示例业务"
+
+interfaces:
+  - interfaceId: INT-PRODUCT-001
+    name: 商品列表查询
+    method: GET
+    path: /api/v1/products
+    behaviorRef: Product_Query
+    # permissionCode 引用 M5 的 permissionId（方法论 §3.2.1）
+    permissionCode: PERM-PRODUCT-LIST
+    description: 分页查询商品列表
+    # 外部接口 → 内部领域事件的映射。
+    # 外部系统回调进来时，按此声明把接口映射为领域事件（ME），
+    # 事件再由订阅方消费——避免在代码里硬编码 interfaceId → eventId 的映射表。
+    mappedInternalEvent: EVT-PRODUCT-001
+    aggregateType: Product
+    requestFields: []
+    responseFields:
+      - { name: productId, label: 商品 ID, type: String }
+      - { name: productNo, label: 商品编号, type: String }
+      - { name: productName, label: 商品名称, type: String }
+      - { name: price, label: 单价, type: Decimal }
+      - { name: status, label: 状态, type: String }
+
+  - interfaceId: INT-PRODUCT-002
+    name: 保存商品草稿
+    method: POST
+    path: /api/v1/products/draft
+    behaviorRef: Product_SaveAsDraft
+    permissionCode: PERM-PRODUCT-ADD
+    description: 新增或更新商品草稿
+    requestFields:
+      - { name: productId, label: 商品 ID, type: String, required: false }
+      - { name: productName, label: 商品名称, type: String, required: true }
+      - { name: category, label: 分类, type: String, required: false }
+      - { name: unit, label: 单位, type: String, required: false }
+      - { name: price, label: 单价, type: Decimal, required: false }
+    responseFields:
+      - { name: productId, label: 商品 ID, type: String }

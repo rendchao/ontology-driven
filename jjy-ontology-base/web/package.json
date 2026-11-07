@@ -1,0 +1,26 @@
+{
+  "name": "jjy-ontology-base-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "本体驱动底座前端骨架（Vue 2.7 + Element UI）。业务工程按 MU 模型补齐页面。",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "element-ui": "^2.15.14",
+    "vue": "^2.7.16",
+    "vue-router": "^3.6.5",
+    "vuex": "^3.6.2"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "^4.5.19",
+    "vue-template-compiler": "^2.7.16"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

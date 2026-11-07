@@ -1,0 +1,99 @@
+# MM 映射模型元文件 - mm-mapping-model.yaml
+#
+# 本文件是「物理表 ↔ M1 字段」的唯一真源：codegen 从这里取表名 / 列名 / 列类型，
+# 并据此生成 PO 与目标态 DDL。改表结构只改这里，不改 Java 代码。
+#
+# 命名规范：表 t_{alias_snake_case}，列 snake_case。
+# 5 默认字段（created_by / created_at / updated_by / updated_at / flag）全表统一。
+#
+# aggregateRef 为空 ⇒ 技术表（无 M1 对应节点，列全部由本文件声明）。
+model_type: MAPPING
+version: "1.0"
+domain: "示例业务"
+
+default_columns: [created_by, created_at, updated_by, updated_at, flag]
+
+mappings:
+
+  # ══════════════════ 平台表（底座自带，与业务无关） ══════════════════
+
+  - mappingId: MAP-AGG-USER-001
+    aggregateRef: AGG-USER-001
+    tables:
+      - tableName: t_user
+        tableType: MAIN
+        mappedEntity: User
+        columnMappings:
+          - { fieldPath: User.userId, columnName: user_id, columnType: VARCHAR(64), pk: true, description: "主键（UUID）" }
+          - { fieldPath: User.username, columnName: username, columnType: VARCHAR(64), description: "登录名" }
+          - { fieldPath: User.passwordHash, columnName: password_hash, columnType: VARCHAR(256), description: "BCrypt 密文" }
+          - { fieldPath: User.fullName, columnName: full_name, columnType: VARCHAR(64), description: "姓名" }
+          - { fieldPath: User.userType, columnName: user_type, columnType: VARCHAR(16), description: "PLATFORM/CUSTOMER/API" }
+          - { fieldPath: User.roleIds, columnName: role_ids, columnType: VARCHAR(500), description: "逗号分隔的角色 ID" }
+          - { fieldPath: User.phone, columnName: phone, columnType: VARCHAR(32) }
+          - { fieldPath: User.email, columnName: email, columnType: VARCHAR(128) }
+          - { fieldPath: User.status, columnName: status, columnType: VARCHAR(16) }
+          - { fieldPath: User.lastLoginAt, columnName: last_login_at, columnType: DATETIME(3) }
+          - { fieldPath: User.passwordChangedAt, columnName: password_changed_at, columnType: DATETIME(3) }
+          - { fieldPath: User.failedLoginCount, columnName: failed_login_count, columnType: INT }
+          - { fieldPath: User.lockedUntil, columnName: locked_until, columnType: DATETIME(3) }
+
+  - mappingId: MAP-AGG-ROLE-001
+    aggregateRef: AGG-ROLE-001
+    tables:
+      - tableName: t_role
+        tableType: MAIN
+        mappedEntity: Role
+        columnMappings:
+          - { fieldPath: Role.roleId, columnName: role_id, columnType: VARCHAR(64), pk: true, description: "主键（UUID）" }
+          - { fieldPath: Role.roleCode, columnName: role_code, columnType: VARCHAR(64), description: "角色编码" }
+          - { fieldPath: Role.roleName, columnName: role_name, columnType: VARCHAR(64) }
+          - { fieldPath: Role.roleType, columnName: role_type, columnType: VARCHAR(16), description: "PLATFORM/CUSTOMER" }
+          - { fieldPath: Role.permissionIds, columnName: permission_ids, columnType: TEXT, description: "逗号分隔的权限 ID" }
+          - { fieldPath: Role.status, columnName: status, columnType: VARCHAR(16) }
+          - { fieldPath: Role.description, columnName: description, columnType: VARCHAR(500) }
+
+  - mappingId: MAP-AGG-AUDIT-LOG-001
+    aggregateRef: AGG-AUDIT-LOG-001
+    tables:
+      - tableName: t_audit_log
+        tableType: MAIN
+        mappedEntity: AuditLog
+        columnMappings:
+          - { fieldPath: AuditLog.logId, columnName: log_id, columnType: VARCHAR(64), pk: true, description: "主键（UUID）" }
+          - { fieldPath: AuditLog.actorId, columnName: actor_id, columnType: VARCHAR(64) }
+          - { fieldPath: AuditLog.actorType, columnName: actor_type, columnType: VARCHAR(16) }
+          - { fieldPath: AuditLog.action, columnName: action, columnType: VARCHAR(64) }
+          - { fieldPath: AuditLog.targetType, columnName: target_type, columnType: VARCHAR(32) }
+          - { fieldPath: AuditLog.targetId, columnName: target_id, columnType: VARCHAR(64) }
+          - { fieldPath: AuditLog.beforeSnapshot, columnName: before_snapshot, columnType: TEXT }
+          - { fieldPath: AuditLog.afterSnapshot, columnName: after_snapshot, columnType: TEXT }
+          - { fieldPath: AuditLog.ipAddress, columnName: ip_address, columnType: VARCHAR(64) }
+          - { fieldPath: AuditLog.userAgent, columnName: user_agent, columnType: VARCHAR(500) }
+          - { fieldPath: AuditLog.traceId, columnName: trace_id, columnType: VARCHAR(64) }
+          - { fieldPath: AuditLog.operationTime, columnName: operation_time, columnType: DATETIME(3) }
+
+  # ══════════════════ 业务示例：商品 ══════════════════
+
+  - mappingId: MAP-AGG-PRODUCT-001
+    aggregateRef: AGG-PRODUCT-001
+    tables:
+      - tableName: t_product
+        tableType: MAIN
+        mappedEntity: Product
+        columnMappings:
+          - { fieldPath: Product.productId, columnName: product_id, columnType: VARCHAR(64), pk: true, description: "主键（UUID）" }
+          - { fieldPath: Product.productNo, columnName: product_no, columnType: VARCHAR(64), description: "业务编号" }
+          - { fieldPath: Product.productName, columnName: product_name, columnType: VARCHAR(200) }
+          - { fieldPath: Product.category, columnName: category, columnType: VARCHAR(64) }
+          - { fieldPath: Product.unit, columnName: unit, columnType: VARCHAR(32) }
+          - { fieldPath: Product.price, columnName: price, columnType: "DECIMAL(18,2)" }
+          - { fieldPath: Product.status, columnName: status, columnType: VARCHAR(16), description: "字典 DICT-PRODUCT-STATUS code" }
+      - tableName: t_product_attribute
+        tableType: DETAIL
+        mappedEntity: ProductAttribute
+        columnMappings:
+          - { fieldPath: ProductAttribute.attributeId, columnName: attribute_id, columnType: VARCHAR(64), pk: true, description: "主键（UUID）" }
+          - { fieldPath: ProductAttribute.productId, columnName: product_id, columnType: VARCHAR(64), description: "外键 → t_product" }
+          - { fieldPath: ProductAttribute.attributeName, columnName: attribute_name, columnType: VARCHAR(128) }
+          - { fieldPath: ProductAttribute.attributeValue, columnName: attribute_value, columnType: VARCHAR(512) }

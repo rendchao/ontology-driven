@@ -1,0 +1,24 @@
+# M4 场景模型元文件 - m4-scenario-model.yaml
+#
+# 场景 = 可复用的多步编排（BEHAVIOR_CALL / EVENT_WAIT / RULE_CHECK / SUB_SCENARIO）。
+# 场景由 ScenarioExecutor 执行，是事件驱动机制的编排层。
+model_type: SCENARIO
+version: "1.0"
+domain: "示例业务"
+
+scenarios:
+  - id: SCN-PRODUCT-SHELF-001
+    name: 商品上架场景
+    description: 提交商品后校验规则并发布上架事件
+    trigger:
+      triggerType: BEHAVIOR
+      behaviorRef: Product_Submit
+    steps:
+      - stepId: S01
+        stepType: RULE_CHECK
+        ruleRef: RULE-PRODUCT-NAME-REQUIRED
+        description: 校验商品名称
+      - stepId: S02
+        stepType: BEHAVIOR_CALL
+        behaviorRef: Product_SaveAsDraft
+        description: 保存当前状态

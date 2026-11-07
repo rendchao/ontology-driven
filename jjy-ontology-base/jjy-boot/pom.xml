@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.jjy</groupId>
+        <artifactId>jjy-ontology-base</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>jjy-boot</artifactId>
+    <packaging>jar</packaging>
+    <name>jjy Boot</name>
+    <description>启动模块（Spring Boot Application + Flyway 迁移 + 模型资源同步）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.jjy</groupId>
+            <artifactId>jjy-interfaces</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jjy</groupId>
+            <artifactId>jjy-application</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <!--
+            双资源源，让 ../models 成为模型唯一地址。
+            - 第 1 个：默认 src/main/resources（应用配置、logback、Flyway SQL、静态资源）
+            - 第 2 个：../models 的 YAML + manifest.json 覆盖到 target/classes/models/
+              （关键！让外层改动自动同步，无需复制两份）
+        -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>../models</directory>
+                <targetPath>models</targetPath>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.jjy.Application</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

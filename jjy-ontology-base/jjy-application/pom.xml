@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.jjy</groupId>
+        <artifactId>jjy-ontology-base</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>jjy-application</artifactId>
+    <packaging>jar</packaging>
+    <name>jjy Application</name>
+    <description>用例编排层：行为分发 / 规则求值 / 流程引擎 / 场景执行器 / AI 工具</description>
+
+    <build>
+        <!--
+            模型资源同步：application 模块的测试也需要 classpath:models/
+            （boot 模块是运行期入口，但 application 单模块测试时 boot 不可见）。
+        -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>../models</directory>
+                <targetPath>models</targetPath>
+                <filtering>false</filtering>
+            </resource>
+            <!-- 迁移脚本同步：测试期由 Flyway 在 H2 上建表 -->
+            <resource>
+                <directory>../jjy-boot/src/main/resources/db/migration</directory>
+                <targetPath>db/migration</targetPath>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+        <plugins>
+        <!--
+          M2 模板行为 → Handler 骨架生成。
+
+          生成物落在 src/main/java/（进版本库，开发者可直接改）。
+          已改动的文件不会被覆盖——按内容指纹判定，改动后由守门员第 10 项
+          报出「生成物与模型不一致」，由人决定如何同步。
+        -->
+        <plugin>
+            <groupId>com.jjy</groupId>
+            <artifactId>codegen-maven-plugin</artifactId>
+            <version>1.0.0</version>
+            <executions>
+                <execution>
+                    <id>generate-handlers</id>
+                    <phase>generate-sources</phase>
+                    <goals>
+                        <goal>generate-handlers</goal>
+                    </goals>
+                </execution>
+            </executions>
+            <configuration>
+                <m2Yaml>../models/m2-behavior-model.yaml</m2Yaml>
+                <m1Yaml>../models/m1-object-model.yaml</m1Yaml>
+                <srcDir>src/main/java</srcDir>
+                <handlerRootPkg>com.jjy.application.handler</handlerRootPkg>
+            </configuration>
+        </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration><overwrite>true</overwrite></configuration>
+            </plugin>
+        </plugins>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <excludes><exclude>models/**</exclude></excludes>
+            </testResource>
+            <testResource>
+                <directory>../models</directory>
+                <targetPath>models</targetPath>
+            </testResource>
+            <!--
+                集成测试的 schema 与生产保持同一事实源：直接复用 boot 模块的全量迁移，
+                测试期由 Flyway 执行，避免测试 schema 漂移导致"表不存在"却仍然绿。
+            -->
+            <testResource>
+                <directory>../jjy-boot/src/main/resources/db/migration</directory>
+                <targetPath>db/migration</targetPath>
+                <includes>
+                    <include>V1__full_schema.sql</include>
+                    <include>V2__full_seed.sql</include>
+                </includes>
+            </testResource>
+        </testResources>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.jjy</groupId>
+            <artifactId>jjy-domain</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jjy</groupId>
+            <artifactId>jjy-infrastructure</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-expression</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.aviator</groupId>
+            <artifactId>aviator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- H2 内存库：单元测试用，避免依赖外部 MySQL -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

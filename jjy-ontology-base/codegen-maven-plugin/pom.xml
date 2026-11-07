@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.jjy</groupId>
+    <artifactId>codegen-maven-plugin</artifactId>
+    <version>1.0.0</version>
+    <packaging>maven-plugin</packaging>
+
+    <name>jjy Codegen Maven Plugin</name>
+    <description>
+        Build-time code generator. Reads models/m1-object-model.yaml + models/mm-mapping-model.yaml
+        and produces PO Java sources plus target-state DDL.
+        M1 (object model) and MM (mapping model) are the single sources of truth;
+        PO classes are generated at build time, never hand-edited.
+    </description>
+
+    <properties>
+        <maven.version>3.3.3</maven.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-plugin-api</artifactId>
+            <version>${maven.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugin-tools</groupId>
+            <artifactId>maven-plugin-annotations</artifactId>
+            <version>3.4</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-core</artifactId>
+            <version>${maven.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- SnakeYAML: parse M1 / MM model files -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.33</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+              本插件在 reactor 里排在最前，且被 jjy-infrastructure 在 generate-sources
+              阶段直接引用（Maven 会优先用 reactor 里的 target/classes，而非本地仓库的 jar）。
+
+              若执行 `mvn clean`：clean 会先删掉本模块的 target/ → plugin.xml 随之消失
+              → 后续模块解析插件描述符失败，报：
+                  Failed to parse plugin descriptor ... No plugin descriptor found at
+                  META-INF/maven/plugin.xml
+              这是「reactor 内自举插件」的经典冲突。
+
+              解法：本模块跳过 clean（插件自身的编译产物交给 compile 覆盖即可）。
+              需要彻底清理时手动删本模块的 target 目录。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-plugin-plugin</artifactId>
+                <version>3.4</version>
+                <configuration>
+                    <goalPrefix>jjy-codegen</goalPrefix>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

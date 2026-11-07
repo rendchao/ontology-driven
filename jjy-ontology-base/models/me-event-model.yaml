@@ -1,0 +1,29 @@
+# ME 事件模型元文件 - me-event-model.yaml
+#
+# 事件 = 领域事件的声明式定义，事件机制（outbox / dispatcher / 幂等 / 死信）
+# 依据本文件驱动。
+model_type: EVENT
+version: "1.0"
+domain: "示例业务"
+
+events:
+  - id: EVT-PRODUCT-001
+    name: 商品已上架
+    eventType: DOMAIN
+    aggregateRef: AGG-PRODUCT-001
+    description: 商品上架审批通过后发布
+    payloadFields:
+      - name: productId
+        label: 商品 ID
+        type: String
+      - name: productNo
+        label: 商品编号
+        type: String
+      - name: status
+        label: 状态
+        type: String
+    # 订阅方引用 M2 的行为 ID（EventSubscriberRegistry 按 M2.subscribedEvents
+    # 建立订阅关系；handlerRef 指向的行为必须真实存在，否则是悬空引用）。
+    subscribers:
+      - handlerRef: Product_OnShelf
+        description: 商品上架后处理（记录上架时间）

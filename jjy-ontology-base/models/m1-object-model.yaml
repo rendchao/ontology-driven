@@ -1,0 +1,261 @@
+# M1 对象模型元文件 - m1-object-model.yaml
+#
+# 底座内置示例：以「商品」聚合 + 「商品明细」子实体演示模型驱动。
+# 正式开发时替换为阶段二产出的本体模型（M1 + MM 是 PO 与 DDL 的唯一真源）。
+#
+# 字段语义：
+#   attributes[]  name=字段名(驼峰) label=中文标签 type=类型 required/unique=约束
+#   entities[]    子实体（从表），localId=子实体主键字段名
+#   dataDictionaries 数据字典（枚举值的唯一真源）
+model_type: OBJECT
+version: "1.0"
+domain: "示例业务"
+
+aggregates:
+
+  # ── 平台聚合（底座自带：用户 / 角色 / 审计日志）──────────────────
+  # 这些聚合的 PO 由 codegen 从本文件生成，MM 提供物理表名与列类型。
+
+  - id: AGG-USER-001
+    name: 用户
+    alias: User
+    aggregateType: AGGREGATE_ROOT
+    description: 系统用户
+    attributes:
+      - name: userId
+        label: 用户ID
+        type: String
+        required: true
+      - name: username
+        label: 登录名
+        type: String
+        required: true
+        unique: true
+      - name: passwordHash
+        label: 密码
+        type: String
+        required: true
+      - name: fullName
+        label: 姓名
+        type: String
+        required: true
+      - name: userType
+        label: 用户类型
+        type: String
+      - name: roleIds
+        label: 角色
+        type: String
+      - name: phone
+        label: 手机号
+        type: String
+      - name: email
+        label: 邮箱
+        type: String
+      - name: status
+        label: 状态
+        type: String
+      - name: lastLoginAt
+        label: 最后登录时间
+        type: DateTime
+      - name: passwordChangedAt
+        label: 密码修改时间
+        type: DateTime
+      - name: failedLoginCount
+        label: 登录失败次数
+        type: Integer
+      - name: lockedUntil
+        label: 锁定截止时间
+        type: DateTime
+
+  - id: AGG-ROLE-001
+    name: 角色
+    alias: Role
+    aggregateType: AGGREGATE_ROOT
+    description: 系统角色与权限集合
+    attributes:
+      - name: roleId
+        label: 角色ID
+        type: String
+        required: true
+      - name: roleCode
+        label: 角色编码
+        type: String
+        required: true
+        unique: true
+      - name: roleName
+        label: 角色名
+        type: String
+        required: true
+      - name: roleType
+        label: 角色类型
+        type: String
+      - name: permissionIds
+        label: 权限集合
+        type: String
+      - name: status
+        label: 状态
+        type: String
+      - name: description
+        label: 描述
+        type: String
+
+  - id: AGG-AUDIT-LOG-001
+    name: 审计日志
+    alias: AuditLog
+    aggregateType: AGGREGATE_ROOT
+    description: 操作审计记录
+    attributes:
+      - name: logId
+        label: 日志ID
+        type: String
+        required: true
+      - name: actorId
+        label: 操作人ID
+        type: String
+        required: true
+      - name: actorType
+        label: 操作人类型
+        type: String
+        required: true
+      - name: action
+        label: 操作
+        type: String
+        required: true
+      - name: targetType
+        label: 目标类型
+        type: String
+        required: true
+      - name: targetId
+        label: 目标ID
+        type: String
+        required: true
+      - name: beforeSnapshot
+        label: 变更前快照
+        type: String
+      - name: afterSnapshot
+        label: 变更后快照
+        type: String
+      - name: ipAddress
+        label: IP地址
+        type: String
+      - name: userAgent
+        label: 用户代理
+        type: String
+      - name: traceId
+        label: 链路追踪ID
+        type: String
+      - name: operationTime
+        label: 操作时间
+        type: DateTime
+        required: true
+
+  # ── 业务示例聚合 ──────────────────────────────────────────────
+
+  - id: AGG-PRODUCT-001
+    name: 商品
+    alias: Product
+    aggregateType: AGGREGATE_ROOT
+    description: 可交易商品的聚合根
+    # 生命周期 = 该聚合根的合法状态集合。
+    # 取值是状态字典 DICT-PRODUCT-STATUS 的 code（不是中文 label），
+    # 与 status 字段实际写入的值一致——这样 LifecycleGuard 才能真正校验。
+    lifecycle:
+      - DRAFT
+      - ON_SHELF
+      - OFF_SHELF
+    # 状态迁移表 = 允许的状态流转。
+    #
+    # 只有「合法状态集合」不够：DRAFT → DRAFT 虽然两端都合法，
+    # 但它是无效迁移（重复提交）。迁移表把「从哪来、到哪去」显式声明出来，
+    # 由 LifecycleGuard 在运行期强制校验。
+    #
+    # 声明这个表，是为了让「状态机」有唯一真源：
+    # 改这里即可改流转规则，代码里不再出现任何状态流转的 if 判断。
+    transitions:
+      # 新建：对象诞生即为草稿（from 为空表示「无前置状态」）
+      - from: ""
+        to: DRAFT
+        via: Product_SaveAsDraft
+      - from: DRAFT
+        to: ON_SHELF
+        via: Product_Submit
+      - from: ON_SHELF
+        to: OFF_SHELF
+        via: Product_TakeOff
+    # 业务编号规则：编号格式 = prefix + yyyyMMdd + 4 位流水，如 PRD202611010001
+    # prefix / table / column 三者都不写在代码里，改这里即可换编号规则。
+    noRule:
+      prefix: PRD
+      table: t_product
+      column: product_no
+    attributes:
+      - name: productId
+        label: 商品ID
+        type: String
+        required: true
+        unique: true
+      - name: productNo
+        label: 商品编号
+        type: String
+        required: true
+        unique: true
+      - name: productName
+        label: 商品名称
+        type: String
+        required: true
+      - name: category
+        label: 商品分类
+        type: String
+      - name: unit
+        label: 计量单位
+        type: String
+      - name: price
+        label: 单价
+        type: Money
+      - name: status
+        label: 状态
+        type: Enum
+        dictionaryRef: DICT-PRODUCT-STATUS
+    entities:
+      - alias: ProductAttribute
+        localId: attributeId
+        name: 商品属性
+        description: 商品的扩展属性行
+        cardinality: ONE_OR_MORE
+        attributes:
+          - name: attributeId
+            label: 属性ID
+            type: String
+            required: true
+          - name: productId
+            label: 商品ID
+            type: AggregateRootRef
+            targetAggregate: AGG-PRODUCT-001
+            required: true
+          - name: attributeName
+            label: 属性名
+            type: String
+            required: true
+          - name: attributeValue
+            label: 属性值
+            type: String
+
+dataDictionaries:
+  - id: DICT-PRODUCT-STATUS
+    name: 商品状态
+    types:
+      - typeCode: product_status
+        typeName: 商品状态
+        items:
+          - code: DRAFT
+            label: 草稿
+            enabled: true
+            sortOrder: 1
+          - code: ON_SHELF
+            label: 上架
+            enabled: true
+            sortOrder: 2
+          - code: OFF_SHELF
+            label: 下架
+            enabled: true
+            sortOrder: 3

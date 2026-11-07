@@ -1,0 +1,63 @@
+# M7 查询报表模型元文件 - m7-report-model.yaml
+#
+# 报表口径的唯一真源。behaviorRef 指向 M2 的 QUERY 行为，二者严格一对一。
+#
+# 关键约定（方法论 §1.3 设计决策 5）：
+#   · 查询口径（结果列 / 数据源 / 参数 / 匹配方式 / 排序 / 分页）全部由本模型声明，
+#     Java 侧由 QueryReportExecutor 按声明生成 SQL，不硬编码任何查询条件。
+#   · parameters[].matchType 声明该参数的匹配方式：
+#       EQ   —— 等值匹配（默认）
+#       LIKE —— 模糊匹配（前后加 %）
+#     不声明则按 EQ 处理。
+model_type: REPORT
+version: "1.0"
+domain: "示例业务"
+
+query_reports:
+  - id: QR-PRODUCT-001
+    name: 商品列表
+    alias: productList
+    objectType: LIST_QUERY
+    description: 分页查询商品列表
+    behaviorRef: Product_Query
+    sourceObjects:
+      - objectRef: AGG-PRODUCT-001
+        alias: product
+        primary: true
+    joins: []
+    parameters:
+      - name: productName
+        label: 商品名称
+        type: String
+        required: false
+        # 商品名称按模糊匹配——业务上「输入名称片段」是列表查询的常态，
+        # 匹配方式属于查询口径，必须由模型声明，不能由代码默认成等值。
+        matchType: LIKE
+      - name: status
+        label: 状态
+        type: Enum
+        required: false
+        matchType: EQ
+    conditions: []
+    resultColumns:
+      - field: productNo
+        label: 商品编号
+      - field: productName
+        label: 商品名称
+      - field: category
+        label: 分类
+      - field: unit
+        label: 单位
+      - field: price
+        label: 单价
+      - field: status
+        label: 状态
+    groupBy: []
+    having: []
+    orderBy:
+      - field: productId
+        direction: DESC
+    pagination: true
+    reportOptions:
+      pageSize: 20
+    version: "1.0"

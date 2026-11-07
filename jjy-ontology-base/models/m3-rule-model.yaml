@@ -1,0 +1,54 @@
+# M3 规则模型元文件 - m3-rule-model.yaml
+#
+# 规则 = 可复用的业务约束。表达式由 SpEL / Aviator 求值（见 RuleEvaluator）。
+# inputParams 声明入参及其来源字段，reusedBy 声明复用该规则的行为。
+#
+# 复用关系是「双向索引」：
+#   M2.appliedRules[]  ←——→  M3.rules[].reusedBy[]
+# 两者必须一致，由 RuleRegistryChecker 校验。任一侧漏改就是漂移——
+# 表现为「模型说规则生效了，实际没挂」或「规则早已废弃却仍在拦人」，
+# 且全程不报错。
+model_type: RULE
+version: "1.0"
+domain: "示例业务"
+
+rules:
+  - id: RULE-PRODUCT-NAME-REQUIRED
+    name: 商品名称必填
+    ruleType: VALIDATION
+    description: 商品名称不能为空
+    inputParams:
+      - name: productName
+        type: String
+        sourceField: Product.productName
+        required: true
+    outputType: Boolean
+    # 表达式语法取决于 rule.engine：
+    #   · AVIATOR（默认）→ Aviator 5.3 语法。字符串长度用 string.length(x)，
+    #     数值比较用 > >= 等运算符，不要写 Java 方法调用（productName.length() 不被支持）。
+    #   · SPEL → SpEL 语法（#field / T(java.math.BigDecimal).ZERO）。
+    # 本文件默认走 AVIATOR，故用 Aviator 语法书写。
+    expression: |
+      productName != nil && string.length(productName) > 0
+    # 与 M2.appliedRules 保持一致：
+    # 名称必填只在「写入名称」的行为（暂存）上校验，
+    # 提交行为不带名称字段，挂了这条规则会被误判为违规。
+    reusedBy:
+      - Product_SaveAsDraft
+    version: "1.0"
+
+  - id: RULE-PRODUCT-PRICE-POSITIVE
+    name: 商品价格非负
+    ruleType: VALIDATION
+    description: 单价必须大于等于 0
+    inputParams:
+      - name: price
+        type: Decimal
+        sourceField: Product.price
+        required: true
+    outputType: Boolean
+    expression: |
+      price != nil && price >= 0
+    reusedBy:
+      - Product_SaveAsDraft
+    version: "1.0"

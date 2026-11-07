@@ -1,0 +1,53 @@
+# M6 流程模型元文件 - m6-flow-model.yaml
+#
+# 流程 = 跨角色的编排。activities[].nextActivities 声明流转，
+# GATEWAY 节点用 branches[].conditionExpression 判定分支（首个命中即生效）。
+model_type: FLOW
+version: "1.0"
+domain: "示例业务"
+
+flows:
+  - id: FLOW-PRODUCT-SHELF-001
+    name: 商品上架审批流
+    flowType: APPROVAL
+    description: 商品提交后由商品管理员审批，通过则上架
+    businessObjectRefs:
+      - AGG-PRODUCT-001
+    roleRefs:
+      - ROLE-PRODUCT-MANAGER
+    trigger:
+      triggerType: BEHAVIOR
+      behaviorRef: Product_Submit
+    preconditions:
+      - "商品已提交"
+    postconditions:
+      - "商品状态为上架或驳回"
+    startActivity: A01
+    endActivities: [A04, A05]
+    activities:
+      - activityId: A01
+        name: 开始
+        activityType: START
+        nextActivities: [A02]
+      - activityId: A02
+        name: 商品管理员审批
+        activityType: USER_TASK
+        roleRef: ROLE-PRODUCT-MANAGER
+        behaviorRef: Product_Submit
+        nextActivities: [A03]
+      - activityId: A03
+        name: 审批结果判断
+        activityType: GATEWAY
+        branches:
+          - { branchName: 审批通过, conditionExpression: "approval.outcome == 'APPROVE'", targetActivity: A04, isDefault: true }
+          - { branchName: 驳回, conditionExpression: "approval.outcome == 'REJECT'", targetActivity: A05, isDefault: false }
+      - activityId: A04
+        name: 上架完成
+        activityType: END
+        result: APPROVED
+        nextActivities: []
+      - activityId: A05
+        name: 驳回结束
+        activityType: END
+        result: REJECTED
+        nextActivities: []

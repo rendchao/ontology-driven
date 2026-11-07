@@ -1,0 +1,206 @@
+# MU UI 模型元文件 - mu-ui-model.yaml
+#
+# 菜单树与界面定义。actions[].behaviorRef 指向 M2 行为，
+# 每个 USER_ACTION 行为必须至少被一个操作功能点引用（可追溯门禁）。
+model_type: UI
+version: "1.0"
+domain: "示例业务"
+
+application:
+  name: 示例业务系统
+  menus:
+    - menuId: menu-workbench
+      name: 工作台
+      icon: dashboard
+      children:
+        - menuId: menu-my-todos
+          name: 我的待办
+          screenRef: FrmMyTodos
+
+    - menuId: menu-product-mgmt
+      name: 商品管理
+      icon: goods
+      children:
+        - menuId: menu-product-list
+          name: 商品档案
+          screenRef: FrmProductMaintain
+        - menuId: menu-product-query
+          name: 商品查询
+          screenRef: FrmProductQuery
+
+screens:
+  - screenId: FrmProductMaintain
+    name: 商品维护
+    screenType: MAINTAIN
+    layout: SINGLE_TABLE
+    elements:
+      - id: productNo
+        type: TEXT
+        label: 商品编号
+        io: INPUT
+        required: false
+        dataBinding: Product.productNo
+      - id: productName
+        type: TEXT
+        label: 商品名称
+        io: INPUT
+        required: true
+        dataBinding: Product.productName
+      - id: category
+        type: TEXT
+        label: 分类
+        io: INPUT
+        required: false
+        dataBinding: Product.category
+      - id: unit
+        type: TEXT
+        label: 单位
+        io: INPUT
+        required: false
+        dataBinding: Product.unit
+      - id: price
+        type: DECIMAL
+        label: 单价
+        io: INPUT
+        required: false
+        dataBinding: Product.price
+      - id: status
+        type: DICT
+        label: 状态
+        io: INPUT
+        required: false
+        dictionaryRef: DICT-PRODUCT-STATUS
+        dataBinding: Product.status
+      # ── 展示区元素（io=OUTPUT）：渲染表格列 ──
+      # 表单字段与表格列分开声明：前者可编辑，后者只读。
+      # 之前 6 个元素 io 全是 INPUT → 表格列为空，界面渲染不出列表。
+      - id: productNo
+        type: TEXT
+        label: 商品编号
+        io: OUTPUT
+        width: 160
+        dataBinding: Product.productNo
+      - id: productName
+        type: TEXT
+        label: 商品名称
+        io: OUTPUT
+        dataBinding: Product.productName
+      - id: category
+        type: TEXT
+        label: 分类
+        io: OUTPUT
+        width: 120
+        dataBinding: Product.category
+      - id: unit
+        type: TEXT
+        label: 单位
+        io: OUTPUT
+        width: 90
+        dataBinding: Product.unit
+      - id: price
+        type: DECIMAL
+        label: 单价
+        io: OUTPUT
+        width: 110
+        dataBinding: Product.price
+      - id: status
+        type: DICT
+        label: 状态
+        io: OUTPUT
+        width: 100
+        dictionaryRef: DICT-PRODUCT-STATUS
+        dataBinding: Product.status
+    actions:
+      - id: saveDraft
+        name: 保存草稿
+        behaviorRef: Product_SaveAsDraft
+      - id: submit
+        name: 提交上架
+        behaviorRef: Product_Submit
+      - id: takeOff
+        name: 下架
+        behaviorRef: Product_TakeOff
+      - id: delete
+        name: 删除
+        behaviorRef: Product_Delete
+      - id: update
+        name: 更新
+        behaviorRef: Product_Update
+      - id: batchDelete
+        name: 批量删除
+        behaviorRef: Product_BatchDelete
+
+  - screenId: FrmProductQuery
+    name: 商品查询
+    screenType: QUERY
+    layout: QUERY_RESULT
+    elements:
+      - id: productName
+        type: TEXT
+        label: 商品名称
+        io: INPUT
+        required: false
+        dataBinding: Product.productName
+      - id: status
+        type: DICT
+        label: 状态
+        io: INPUT
+        required: false
+        dictionaryRef: DICT-PRODUCT-STATUS
+        dataBinding: Product.status
+      - id: productNo
+        type: TEXT
+        label: 商品编号
+        io: OUTPUT
+        width: 160
+        dataBinding: Product.productNo
+      - id: productName
+        type: TEXT
+        label: 商品名称
+        io: OUTPUT
+        dataBinding: Product.productName
+      - id: price
+        type: DECIMAL
+        label: 单价
+        io: OUTPUT
+        width: 110
+        dataBinding: Product.price
+      - id: status
+        type: DICT
+        label: 状态
+        io: OUTPUT
+        width: 100
+        dictionaryRef: DICT-PRODUCT-STATUS
+        dataBinding: Product.status
+    actions:
+      - id: query
+        name: 查询
+        behaviorRef: Product_Query
+
+  # 工作台「我的待办」：菜单 menu-my-todos 的 screenRef 指向此处。
+  # 该页当前由前端自建（数据源取自 M6 流程实例），暂无可复用的 M2 行为，
+  # 因此 elements 只声明展示结构、actions 为空。
+  - screenId: FrmMyTodos
+    name: 我的待办
+    screenType: QUERY
+    layout: SINGLE_TABLE
+    elements:
+      - id: taskId
+        type: TEXT
+        label: 任务ID
+        io: OUTPUT
+        width: 180
+      - id: title
+        type: TEXT
+        label: 事项
+        io: OUTPUT
+      - id: flowName
+        type: TEXT
+        label: 所属流程
+        io: OUTPUT
+        width: 160
+      - id: createTime
+        type: DATETIME
+        label: 到达时间
+        io: OUTPUT
+        width: 170

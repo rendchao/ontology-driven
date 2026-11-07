@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.jjy</groupId>
+  <artifactId>jjy-ontology-base</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+
+  <name>jjy-ontology-base</name>
+  <description>
+    本体驱动业务系统开发底座（Java 8 + MySQL + Spring Boot 2.7），包名 com.jjy。
+    提供通用机制，不含任何业务域代码：
+    · 本体模型运行时（M1-M7 + ME/MI/MM/MU 十一模型 → ModelRegistry）
+    · 行为驱动执行器（权限 → 规则 → Handler → outbox，同事务）
+    · 事件机制（outbox / 幂等 / 重试 / 死信 / 启动恢复）
+    · 流程引擎与场景引擎（M6 审批流 / M4 四类步骤编排）
+    · 规则求值沙箱（Aviator + SpEL 双引擎）
+    · RBAC 与数据权限、多租户隔离、AOP 审计
+    · AI 对话与只读 SQL 安全边界
+    · 构建期代码生成（M1 + MM → PO / 目标态 DDL）
+  </description>
+
+  <properties>
+    <java.version>1.8</java.version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <spring.boot.version>2.7.18</spring.boot.version>
+    <mybatis.plus.version>3.5.5</mybatis.plus.version>
+    <mysql.connector.version>8.0.33</mysql.connector.version>
+    <druid.version>1.2.20</druid.version>
+    <jjwt.version>0.11.5</jjwt.version>
+    <aviator.version>5.3.1</aviator.version>
+    <caffeine.version>2.9.3</caffeine.version>
+    <hutool.version>5.8.22</hutool.version>
+    <flyway.version>9.22.3</flyway.version>
+    <lombok.version>1.18.30</lombok.version>
+    <testcontainers.version>1.19.8</testcontainers.version>
+    <h2.version>2.1.214</h2.version>
+    <codegen.plugin.version>1.0.0</codegen.plugin.version>
+    <!--
+      PO 生成插件的包根：业务项目可改为自己公司的包。
+      注意：必须与 BaseAuditPO 所在包一致（infrastructure.persistence.po），
+      否则生成的 PO 找不到基类。
+    -->
+    <po.root.pkg>com.jjy.infrastructure.persistence.po</po.root.pkg>
+  </properties>
+
+  <modules>
+    <!-- 代码生成插件必须排最前：infrastructure 在 generate-sources 阶段用它生成 PO -->
+    <module>codegen-maven-plugin</module>
+    <module>jjy-domain</module>
+    <module>jjy-infrastructure</module>
+    <module>jjy-application</module>
+    <module>jjy-interfaces</module>
+    <module>jjy-boot</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring.boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.baomidou</groupId>
+        <artifactId>mybatis-plus-boot-starter</artifactId>
+        <version>${mybatis.plus.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.mysql</groupId>
+        <artifactId>mysql-connector-j</artifactId>
+        <version>${mysql.connector.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>druid-spring-boot-starter</artifactId>
+        <version>${druid.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-api</artifactId>
+        <version>${jjwt.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-impl</artifactId>
+        <version>${jjwt.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-jackson</artifactId>
+        <version>${jjwt.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.googlecode.aviator</groupId>
+        <artifactId>aviator</artifactId>
+        <version>${aviator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+        <version>${caffeine.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>cn.hutool</groupId>
+        <artifactId>hutool-all</artifactId>
+        <version>${hutool.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+        <version>${flyway.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-mysql</artifactId>
+        <version>${flyway.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <version>${h2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>mysql</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <source>${maven.compiler.source}</source>
+            <target>${maven.compiler.target}</target>
+            <encoding>UTF-8</encoding>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.22.2</version>
+          <configuration>
+            <argLine>-Dfile.encoding=UTF-8</argLine>
+            <includes>
+              <include>**/*Test.java</include>
+              <include>**/*Tests.java</include>
+            </includes>
+          </configuration>
+        </plugin>
+        <!--
+          spring-boot-maven-plugin 必须锁 2.7.x：3.x/4.x 的 plugin 本身由 Java 17 编译
+          （class file 61），在 Java 8 环境下会抛 UnsupportedClassVersionError。
+        -->
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring.boot.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.3.1</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>
